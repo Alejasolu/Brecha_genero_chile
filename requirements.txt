@@ -1,0 +1,8 @@
+pandas
+plotly
+streamlit
+datetime
+Pydeck
+hydralit_components
+geojson
+
