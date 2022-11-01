@@ -1,95 +1,95 @@
-# ---------------- Importar Paquetes -------------
+# ---------------- Import packages -------------
 import streamlit as st # !pip install streamlit 
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import geojson # !pip install geojson
 import base64
-import hydralit_components as hc # Paquete para crear el menú
+import hydralit_components as hc # Package for create the menu
 
-# -------- Función para Descargar Archivos csv -------
-def get_table_download_link(df, brecha): # Tiene cómo parámetros la base y el nombre de la brecha a descargar
+# -------- Function to download csv fields  -------
+def get_table_download_link(df, brecha): # It has as parameters the base and the name of the gap to download
     csv = df.to_csv(index = False)
     b64 = base64.b64encode(csv.encode()).decode()
-    href = f'<a href="data:file/csv;base64,{b64}" download="datos_' + brecha + '.csv">Descargar archivo ' + brecha + ' csv</a>' # Apararece la opción de descarga con el nombre de la brecha y con este nombre se descarga 
+    href = f'<a href="data:file/csv;base64,{b64}" download="datos_' + brecha + '.csv">Descargar archivo ' + brecha + ' csv</a>' # The download option appears with the name of the gap and with this name it is downloaded
     return href
 
-# ------------ Configuración de Página ---------------
-st.set_page_config(page_title = 'Brecha de Género', # Nombre de la página 
-                   page_icon = ':bar_chart:', # Ícono de gráfico de barras de la página
-                   layout = 'wide') # Utilizar la página completa en lugar de una columna central estrecha
+# ------------ Page Setup ---------------
+st.set_page_config(page_title = 'Brecha de Género', # Name of the page
+                   page_icon = ':bar_chart:', # page bar chart icon
+                   layout = 'wide') # Use the full page instead of a narrow center column
 
-# -----------  Optimizar el Rendimiento --------------
+# -----------  Optimize Performance --------------
 @st.cache(persist = True) 
 
-# ------ Función para cargar las bases de datos ----------
-def load_data(url): # Tiene cómo parámetro la ruta de acceso de la base de datos
-    df = pd.read_csv(url) # Importar la base con la ruta de acceso
-    df ['Anio'] = pd.to_datetime(df['Anio'], format ='%Y') # Pasar el año a formato fecha
-    df['Anio'] = df['Anio'].dt.year # Dejar solo el año de la fecha
-    df = df[(df['Anio'] >= 2010) & (df['Anio'] <= 2019 )] #Se toman solo los datos pertenecientes a los años de interes(2010-2019)
-    return df # Retorna el dataframe cargado 
+# ------ Function to load the databases ----------
+def load_data(url): # It has as a parameter the access path of the database
+    df = pd.read_csv(url) # Import base with path
+    df ['Anio'] = pd.to_datetime(df['Anio'], format ='%Y') # Convert year to date format
+    df['Anio'] = df['Anio'].dt.year # Leave only the year of the date
+    df = df[(df['Anio'] >= 2010) & (df['Anio'] <= 2019 )] #Only the data belonging to the years of interest are taken (2010-2019)
+    return df # Return the loaded dataframe
 
-# ------------ Importar Bases de Datos -------------
-df = load_data('brecha_des.csv') # Brecha de género en la desocupación
-brecha_des = df.copy() # Se crea una copia del original para trabajar
+# ------------ Import Databases -------------
+df = load_data('brecha_des.csv') # Gender gap in unemployment
+brecha_des = df.copy() # A copy of the original is created to work
 
-df = load_data('brecha_nac.csv') # Brecha de género en paternidad y maternidad adolescentes
-brecha_nac = df.copy() # Se crea una copia del original para trabajar
+df = load_data('brecha_nac.csv') # Gender gap in adolescent fatherhood and motherhood
+brecha_nac = df.copy() # A copy of the original is created to work
 
-df = load_data('brecha_tit.csv') # Brecha de género en titulos profesionales
-brecha_tit = df.copy() # Se crea una copia del original para trabajar
+df = load_data('brecha_tit.csv') # Gender gap in professional titles
+brecha_tit = df.copy() #A copy of the original is created to work
 
-# -------------- Importar geojson --------------
-with open('regiones.json') as f: # Se carga el geojson con la regiones de Chile
+# -------------- Import geojson --------------
+with open('regiones.json') as f: # The geojson is loaded with the regions of Chile
   gj_com = geojson.load(f) 
   
-# ---------- Importar Bases Adicionales ------------
-df = pd.read_csv('brecha_salario.csv', sep = ';') # Brecha de género en salario
-brecha_sal = df.copy() # Se crea una copia del original para trabajar
+# ---------- Import Additional Bases ------------
+df = pd.read_csv('brecha_salario.csv', sep = ';') # Gender gap in salary
+brecha_sal = df.copy() # A copy of the original is created to work
 
-df = pd.read_csv('poblacion.csv', sep=';') # Población de Chile
-poblacion = df.copy() # Se crea una copia del original para trabajar
+df = pd.read_csv('poblacion.csv', sep=';') # Population of Chile
+poblacion = df.copy() # A copy of the original is created to work
 
-# -------- Depuración de Bases de Datos ----------
+# -------- Database Debugging ----------
 #brecha_des.columns
-brecha_des = brecha_des.rename(columns={'Tasa_des_mujeres ':'Tasa_des_mujeres'}) # Quitar espacio en nombre de columna
+brecha_des = brecha_des.rename(columns={'Tasa_des_mujeres ':'Tasa_des_mujeres'}) # Remove space in column name
 
-#brecha_des['Trimestre'].unique() # Enero no tiene espacio con el '-'
-brecha_des['Trimestre'] = brecha_des['Trimestre'].replace({'Ene- Mar':'Ene - Mar'}) #Ahora todos están escritos de la misma forma
+#brecha_des['Trimestre'].unique() # January has no space with the '-'
+brecha_des['Trimestre'] = brecha_des['Trimestre'].replace({'Ene- Mar':'Ene - Mar'}) #Now they're all spelled the same
 
 
-# --- Tratamiento de Datos Faltantes para Corregir el Tipo de Dato ---
+# --- Treatment of Missing Data to Correct the Type of Data ---
 brecha_tit['Mujeres_tituladas'] = brecha_tit['Mujeres_tituladas'].interpolate().astype(int)
 
-# -------- Generación Bodegas de Datos ----------
-brecha_des1 = brecha_des[['Anio', 'Trimestre', 'Region', # Brecha de género en la desocupación
+# -------- Data Warehouse Generation ----------
+brecha_des1 = brecha_des[['Anio', 'Trimestre', 'Region', # Gender gap in unemployment
                           'Codigo_region','Tasa_desocupacion', 'Tasa_des_hombres',  
-                          'Tasa_des_mujeres', 'Brecha_genero']] # Se dejan los atributos de interes
+                          'Tasa_des_mujeres', 'Brecha_genero']] # The attributes of interest are left
 
-brecha_tit1 = brecha_tit[['Anio', 'Region', 'Codigo_region', 'Tituladas', # Brecha de género en titulos profesionales 
+brecha_tit1 = brecha_tit[['Anio', 'Region', 'Codigo_region', 'Tituladas', # Gender gap in professional titles 
                           'Hombres_titulados', 'Mujeres_tituladas', 'Porc_hombres_t', 
-                          'Porc_mujeres_t', 'Brecha_genero']] # Se dejan los atributos de interes
+                          'Porc_mujeres_t', 'Brecha_genero']] #  The attributes of interest are left
 
-brecha_nac1 = brecha_nac[['Anio', 'Region', 'Codigo_region', 'Tramos_edad', # Brecha de género en paternidad y maternidad adolescentes
+brecha_nac1 = brecha_nac[['Anio', 'Region', 'Codigo_region', 'Tramos_edad', # Gender gap in adolescent fatherhood and motherhood
                         'Nacidos_padres', 'Nacidos_madres', 'Porc_nacidos_padres', 
-                        'Porc_nacidos_madres', 'Brecha_genero']] # Se dejan los atributos de interes
+                        'Porc_nacidos_madres', 'Brecha_genero']] # The attributes of interest are left
 
-# --- Especificar la Definición del Menú Principal ---
+# --- Specify Main Menu Definition ---
 menu_data = [
-        {'icon': "far fa-chart-bar", 'label':"Dashboard"}, # Se agrega un ícono a cada menú
+        {'icon': "far fa-chart-bar", 'label':"Dashboard"}, # An icon is added to each menu
         {'icon': "fa fa-database", 'label':"Bases"},
         {'icon': "fa fa-play", 'label':"Videos"}]
 
-# -------- Colores Primarios del Menú ------
+# -------- Menu Primary Colors ------
 over_theme = {'txc_inactive': '#FFFFFF', 'menu_background':'#68BAE3', 'txc_active':'#4811A3', 'option_active':'#A6FAC7'}
 
-# -------- ---Creación del Menú ---------------
-menu_id = hc.nav_bar(menu_definition = menu_data, home_name = 'Inicio', override_theme = over_theme, 
+# -------- ---Menu Creation ---------------
+menu_id = hc.nav_bar(menu_definition = menu_data, home_name = 'Home', override_theme = over_theme, 
                      use_animation = True, sticky_mode = 'pinned')
 
 
-# -------- Agregar Color a Background de la Página -----------
+# -------- Add Color to Page Background -----------
 st.markdown(
     """
 <style>
@@ -101,32 +101,32 @@ span[data-baseweb="tag"] {
     unsafe_allow_html=True,
 )
 
-# -------- Condicional para Ingresar el Contenido al Menú Inicio --------
-if menu_id == 'Inicio':
+# -------- Conditional to Enter the Content to the Start Menu --------
+if menu_id == 'Home':
     
-    # Partición de la página para ajustar la imagen
+    # Partition the page to fit the image
     col1, col2, col3 = st.columns((1,3,1))
     
     with col1:
         st.write(' ')
     with col2:
-        st.image('inicio1.jpg', use_column_width=True) # Se inserta la imagen de la portada        
-        # Texto que acompaña la imagen de Inicio
-        st.markdown('<div style="text-align: justify;">Las brechas de desigualdad de género son una medida estadística que da cuenta de la distancia de mujeres y hombres con respecto a un mismo indicador. La cuantificación de las brechas ha estimulado el desarrollo de estadísticas y la formulación de indicadores para comprender las dimensiones de la desigualdad y monitorear los efectos de las políticas sobre su erradicación, así como los avances en la eliminación de la desigualdad comparativamente a través del tiempo.</div>', unsafe_allow_html=True)
+        st.image('inicio1.jpg', use_column_width=True) # Cover image is inserted       
+        # Text that accompanies the Start image
+        st.markdown('<div style="text-align: justify;">Gender inequality gaps are a statistical measure that accounts for the distance between women and men with respect to the same indicator. The quantification of the gaps has stimulated the development of statistics and the formulation of indicators to understand the dimensions of inequality and monitor the effects of policies on its eradication, as well as progress in eliminating inequality comparatively over time..</div>', unsafe_allow_html=True)
     with col3:
         st.write(' ')        
 
-# -------- Condicional para Ingresar el Contenido al Menú Dashboard --------
+# -------- Conditional to Enter the Content to the Dashboard Menu --------
 if menu_id == 'Dashboard':
     
-# --------- Partición de la Página ----------    
+# --------- Page Partition ----------    
     c1, c2, c3, c4, c5 = st.columns((0.4,1,1,1,1))
     
 
-# ----------------- Métricas -------------------- 
+# ----------------- Metrics -------------------- 
 
-    # -------- Top Brecha de Desocupación ---------
-    c2.markdown("<h3 style ='text-align: left; color: #169AA3;'>Top Desocupación </h3>", unsafe_allow_html =True)
+    # -------- Top Unemployment Gap---------
+    c2.markdown("<h3 style ='text-align: left; color: #169AA3;'>Top Unemployment </h3>", unsafe_allow_html =True)
     
     bd = brecha_des1.groupby(['Region'])[['Brecha_genero']].max().sort_values(by='Brecha_genero', ascending = False).head(1)
     
@@ -137,7 +137,7 @@ if menu_id == 'Dashboard':
     c2.metric('Brecha', value = top_perp_name, delta = top_region)
     
 
-    # -------- Top Brecha de Títulos ---------    
+    # -------- Top Title Gap ---------    
     c3.markdown("<h3 style ='text-align: left; color: #169AA3;'>Top Títulos</h3>", unsafe_allow_html =True)
     
     bd = brecha_tit1.groupby(['Region'])[['Brecha_genero']].max().sort_values(by='Brecha_genero').head(1)    
@@ -159,7 +159,7 @@ if menu_id == 'Dashboard':
        
     c4.metric('Brecha', value = top_perp_name, delta = top_region)
     
-    # -------- Top Brecha de Salario ---------  
+    # -------- Top Salary Gap ---------  
     
     brechas = brecha_sal.columns[brecha_sal.columns.str.contains('^Brecha')]
     salario1 = brecha_sal[brechas]
@@ -173,44 +173,44 @@ if menu_id == 'Dashboard':
 
     top_region = bd.index[0]  
     
-    c5.markdown("<h3 style ='text-align: left; color: #169AA3;'>Top Salario</h3>", unsafe_allow_html =True)
+    c5.markdown("<h3 style ='text-align: left; color: #169AA3;'>Top Salary</h3>", unsafe_allow_html =True)
     
     c5.metric('Brecha', value = top_perp_name, delta = top_region)
     
     st.markdown('---')    
 
-# --------------------------------- Evolución de las Brechas de Género -----------------------------------------
+# --------------------------------- Gender Gaps Evolution -----------------------------------------
 
-    # ------ Título ------ 
-    st.markdown("<h3 style ='text-align: center; color:#169AA3;'>Evolución de las Brechas de Género</h3>", unsafe_allow_html = True)
+    # ------ Title ------ 
+    st.markdown("<h3 style ='text-align: center; color:#169AA3;'>Gender Gaps Evolution</h3>", unsafe_allow_html = True)
     
-    # Se agrupa la brecha de desocupación por año
+    # The unemployment gap is grouped by year
     bgdes = brecha_des1.groupby(['Anio'])[['Brecha_genero']].mean().rename(columns={'Brecha_genero':'brecha desocupación'}).reset_index() 
     
-    # Se agrupa los porcentajes de madres y padres adolescentes por año y región, ya que estaba por tramos de edad
+    # The percentages of adolescent mothers and fathers are grouped by year and region, as it was by age groups
     bgnac = brecha_nac1.groupby(['Anio', 'Region'])[['Porc_nacidos_padres', 'Porc_nacidos_madres']].sum().reset_index()
     
-    # Se calcula la diferencia entre porcentajes por género y región, para calcular la brecha
+    # The difference between percentages by gender and region is calculated to calculate the gap
     bgnac['brecha_genero'] = bgnac['Porc_nacidos_madres'] - bgnac['Porc_nacidos_padres']
     
-    # Se agrupa la brecha entre madres y padres por año
+    # The gap between mothers and fathers is grouped by year
     bgnac = bgnac.groupby(['Anio'])[['brecha_genero']].mean().rename(columns={'brecha_genero':'brecha padres'}).reset_index()
     
-    # Se agrupa la brecha de titulos por año
+    # The title gaps is grouped by year
     bgtit = brecha_tit1.groupby(['Anio'])[['Brecha_genero']].mean().rename(columns={'Brecha_genero':'brecha titulos'}).reset_index()
     
-    # Se hace el merge de las brechas de género por año
+    # The gender gaps are merged by year
     bgseries = pd.merge(bgnac, bgdes, how = 'outer', on = ['Anio'])
     bgseries1 = pd.merge(bgseries, bgtit, how = 'outer', on = ['Anio'])
     
-    # Se hace un gráfico de líneas para visulizar las series de tiempo
+    # A line graph is made to visualize the time series
     
-    # ---- Gráfica ------
-    fig = px.line(bgseries1, x = 'Anio', y = ['brecha padres',	'brecha desocupación', 'brecha titulos'], width = 1000, height = 450,
+    # ---- Gaph ------
+    fig = px.line(bgseries1, x = 'Year', y = ['Fathers gap',	'Unemployment gap', 'Titles gap'], width = 1000, height = 450,
                   color_discrete_sequence = ['#A6FAC7','#68BAE3','#169AA3'], markers = True
                   )
     
-    # --- Detalles ---
+    # --- Details ---
     fig.update_layout(
         template = 'simple_white',
         legend_title = 'Tipo:',
@@ -226,39 +226,39 @@ if menu_id == 'Dashboard':
             x = 0.7)
         )
     
-    # ---- Mostrar Gráfica -----
+    # ---- Show graph -----
     st.plotly_chart(fig, use_container_width = True)
 
-# --------- Partición de la Página ----------
+# --------- Position of the page ----------
     c1, c2 = st.columns((4,5))
     
-# ---------------------------------- Relación Tituladas con Madres Adolescentes -----------------------------------
+# ---------------------------------- Relationship between Graduates with Adolescent Mothers -----------------------------------
    
-    # ------ Título ------ 
-    c1.markdown("<h3 style ='text-align: center; color:#169AA3;'>Relación Tituladas con Madres Adolescentes</h3>", unsafe_allow_html =True)
+    # ------ Title ------ 
+    c1.markdown("<h3 style ='text-align: center; color:#169AA3;'>Relationship between Graduates with Adolescent Mothers</h3>", unsafe_allow_html =True)
     
-    # Creamos dos dataframes apartir de la bodega de datos brecha_tit1 agrupando por cada año la cantidad de mujeres tituladas y las madres adolescentes
+    # We create two dataframes from the 'brecha_tit1' data warehouse, grouping for each year the number of women graduates and teenage mothers
     tituladas1 = brecha_tit1.groupby(['Anio'])[['Mujeres_tituladas']].sum().rename(columns={'Mujeres_tituladas':'cantidad'}).reset_index()
-    tituladas1['tipo'] = 'Tituladas' # Se agrega una columna con el tipo 'Tituladas'
+    tituladas1['tipo'] = 'Tituladas' # A column with the type 'Titles' is added
     madres1 = brecha_nac1.groupby(['Anio'])[['Nacidos_madres']].sum().rename(columns={'Nacidos_madres':'cantidad'}).reset_index()
-    madres1['tipo'] = 'Madres Adolescentes' # Se agrega una columna con el tipo 'Madres Adolescentes'
+    madres1['tipo'] = 'Madres Adolescentes' # A column with the type 'Teen Mothers' is added
 
-    # Unimos los dos dataframes anteriores
+    # We join the two previous dataframes
     tm = pd.merge(tituladas1, madres1, how = 'outer', on = ['Anio','cantidad','tipo'])
     
-    # Creamos un gráfico de barras dónde se pueda visualizar la relación de las tituladas con las madres adolescentes por año
+    # We created a bar chart where the relationship of graduates with teenage mothers per year can be visualized
     
-    # ---- Gráfica ------
-    fig = px.bar(tm, x = 'Anio', y = 'cantidad', color = 'tipo', barmode = 'group', width = 580, height = 350,
+    # ---- Graph ------
+    fig = px.bar(tm, x = 'Year', y = 'Quantity', color = 'tipo', barmode = 'group', width = 580, height = 350,
              color_discrete_sequence = ['#A6FAC7','#68BAE3']
              )
     
-    # --- Detalles ---
+    # --- Details ---
     fig.update_layout(
         template = 'simple_white',
-        legend_title = 'Evolución en el año según:',
-        xaxis_title = '<b>Región<b>',
-        yaxis_title = '<b>Cantidad<b>',
+        legend_title = 'Evolution in the year according to:',
+        xaxis_title = '<b>Region<b>',
+        yaxis_title = '<b>Quantity<b>',
         plot_bgcolor = 'rgba(0,0,0,0)',
         
         legend=dict(
@@ -269,35 +269,35 @@ if menu_id == 'Dashboard':
             x = 0.8)
     )
     
-    # ---- Mostrar Gráfica -----
+    # ---- Show Graph -----
     c1.plotly_chart(fig)
 
-# ---------------------------------- Tasa Regional de Desocupación Histórica por Género -----------------------------------    
+# ---------------------------------- Historical Regional Unemployment Rate by Gender -----------------------------------    
     
-    # ------ Título ------ 
-    c2.markdown("<h3 style ='text-align: center; color:#169AA3;'>Tasa Regional de Desocupación Histórica por Género</h3>", unsafe_allow_html =True)
+    # ------ Title ------ 
+    c2.markdown("<h3 style ='text-align: center; color:#169AA3;'>Historical Regional Unemployment Rate by Gender</h3>", unsafe_allow_html =True)
     
-    # Creamos dos dataframes dónde cada tasa de desocupación de cada género se agrupe por region para así obtener una columna que contenga información del género
-    # Se renombra cada tasa de genero por cantidad para que podamos crear una columna que sea en común y la llamaremos tasa
+    # We create two dataframes where each unemployment rate of each gender is grouped by region in order to obtain a column that contains information on the gender
+    # Each gender rate is renamed by quantity so that we can create a column that is in common and we will call it rate
     desocupados = brecha_des1.groupby(['Region'])[['Tasa_des_hombres']].mean().rename(columns={'Tasa_des_hombres':'tasa'}).reset_index()
     desocupados['tipo'] = 'Hombres'
     desocupadas = brecha_des1.groupby(['Region'])[['Tasa_des_mujeres']].mean().rename(columns={'Tasa_des_mujeres':'tasa'}).reset_index()
     desocupadas['tipo'] = 'Mujeres'
     
-    # Juntamos los dos dataframes y obtenemos una tabla que contiene la tasa de desocupación de cada región y a que género pertenece
+    # We join the two dataframes and obtain a table that contains the unemployment rate of each region and to which gender it belongs
     des = pd.merge(desocupados, desocupadas, how = 'outer', on = ['Region','tasa','tipo']).sort_values(by="tasa", ascending= False)
    
-    # ---- Gráfica ------
+    # ---- Graph ------
     fig = px.bar(des, x ='Region', y = 'tasa', color = 'tipo', barmode = 'group', width = 750, height = 350,
              color_discrete_sequence = ['#A6FAC7','#68BAE3']
              ) 
     
-    # --- Detalles ---
+    # --- Details ---
     fig.update_layout(
         template = 'simple_white',
-        legend_title = 'Evolución en el año según:',
-        xaxis_title = '<b>Región<b>',
-        yaxis_title = '<b>Cantidad<b>',
+        legend_title = 'Evolution in the year according to:',
+        xaxis_title = '<b>Region<b>',
+        yaxis_title = '<b>Quantity<b>',
         plot_bgcolor = 'rgba(0,0,0,0)',
         
         legend=dict(
@@ -308,40 +308,40 @@ if menu_id == 'Dashboard':
             x = 0.8)
     )
     
-    # ---- Mostrar Gráfica -----
+    # ---- Show Graphic -----
     c2.plotly_chart(fig)
 
-# --------- Partición de la Página ----------  
+# --------- Page Partition----------  
     c3, c4 = st.columns((1,1))
 
-# ---------------------------------- Variación de la Relación entre Madres y Tituladas del Año 2019 Respecto a 2018 -----------------------------------    
+# ---------------------------------- Variation in the Relationship between Mothers and Graduates of the Year 2019 Compared to 2018 -----------------------------------    
     
-    # ------ Título ------ 
-    c3.markdown("<h3 style ='text-align: center; color:#169AA3;'>Variación de la Relación entre Madres y Tituladas del Año 2019 Respecto a 2018</h3>", unsafe_allow_html =True)
+    # ------ Title ------ 
+    c3.markdown("<h3 style ='text-align: center; color:#169AA3;'>Variation in the Relationship between Mothers and Graduates of the Year 2019 Compared to 2018</h3>", unsafe_allow_html =True)
     
-    # Filtra por año 2018 y se agrupa por año y región las mujeres tituladas y para las madres adolescentes
+    # Filtered by year 2018 and grouped by year and region for women graduates and for teenage mothers
     brecha2018t = brecha_tit1[brecha_tit1['Anio'] == 2018].groupby(['Anio', 'Region'])[['Mujeres_tituladas']].sum().reset_index()
     brecha2018n = brecha_nac1[brecha_nac1['Anio'] == 2018].groupby(['Anio', 'Region'])[['Nacidos_madres']].sum().reset_index()
     
-    # Filtra por año 2019 y se agrupa por año y región las mujeres tituladas y para las madres adolescentes
+    # Filtered by year 2019 and grouped by year and region for women graduates and for teenage mothers
     brecha2019t = brecha_tit1[brecha_tit1['Anio'] == 2019].groupby(['Anio', 'Region'])[['Mujeres_tituladas']].sum().reset_index()
     brecha2019n = brecha_nac1[brecha_nac1['Anio'] == 2019].groupby(['Anio', 'Region'])[['Nacidos_madres']].sum().reset_index()
     
-    # Se hace el merge para los dataframes de cada año
+    # The merge is done for the dataframes of each year
     brecha2018 = pd.merge(brecha2018t, brecha2018n, how = 'outer', on = ['Anio', 'Region'])
     brecha2019 = pd.merge(brecha2019t, brecha2019n, how = 'outer', on = ['Anio', 'Region'])
         
-    # Proporción entre las madres adolescentes y mujeres tituladas para cada año
+    # Proportion between teenage mothers and women graduates for each year
     brecha2018['Prop2018'] = brecha2018['Nacidos_madres']/brecha2018['Mujeres_tituladas']
     brecha2019['Prop2019'] = brecha2019['Nacidos_madres']/brecha2019['Mujeres_tituladas']
     
-    # Variación porcentual
+    # Percentage change
     brecha2019['var_prop'] = round((brecha2019['Prop2019'] - brecha2018['Prop2018'])/brecha2018['Prop2018'], 2)*100
     
-    # Se filtra el dataframe con la diferencia de proporción para cada región 
+    # The dataframe is filtered with the proportion difference for each region 
     bdiff = brecha2019[['Region', 'var_prop']].sort_values(by = 'var_prop')   
     
-    # ---- Gráfica ------
+    # ---- Graph ------
     fig = px.bar(bdiff, x = 'Region', y = 'var_prop',                 
                  barmode = 'group',
                  color_discrete_sequence = ['#A6FAC7'], 
@@ -350,23 +350,23 @@ if menu_id == 'Dashboard':
     # --- Detalles ---
     fig.update_layout(
         template = 'simple_white',
-        xaxis_title = '<b>Región<b>',
-        yaxis_title = '<b>Variación porcentual<b>',
+        xaxis_title = '<b>Region<b>',
+        yaxis_title = '<b>Percentage change<b>',
         plot_bgcolor = 'rgba(0,0,0,0)'
         )    
     
-    # ---- Mostrar Gráfica -----
+    # ---- Show Graph -----
     c3.plotly_chart(fig)
 
-# ---------------------------------- % Brecha Máxima de Género por Año -----------------------------------       
+# ---------------------------------- % Maximum Gender Gap per Year -----------------------------------       
     
-    # ------ Título ------
-    c4.markdown("<h3 style ='text-align: center; color:#169AA3;'>% Brecha Máxima de Género por Año</h3>", unsafe_allow_html = True)
+    # ------ Title ------
+    c4.markdown("<h3 style ='text-align: center; color:#169AA3;'>% Maximum Gender Gap per Year</h3>", unsafe_allow_html = True)
     
-    # Se agrupa por año la brecha de género tomando el valor máximo para cada año
+    # The gender gap is grouped by year, taking the maximum value for each year
     bd = brecha_des1.groupby(['Anio'])[['Brecha_genero']].max().reset_index()
     
-    # ---- Gráfica ------
+    # ---- Graph ------
     fig = px.pie(bd, values = 'Brecha_genero', names = 'Anio',
                  width = 520, height = 520,
                  color_discrete_sequence = ['#1b4f72','#21618c','#2874a6','#2e86c1','#3498db','#5dade2','#85c1e9','#aed6f1','#d6eaf8','#ebf5fb'])
@@ -374,7 +374,7 @@ if menu_id == 'Dashboard':
     # --- Detalles ---
     fig.update_layout(
         template = 'simple_white',
-        legend_title = '<b> Año<b>',
+        legend_title = '<b> Year<b>',
         title_x = 0.5,
         
     legend=dict(
@@ -385,16 +385,15 @@ if menu_id == 'Dashboard':
     
     c4.plotly_chart(fig)
     
-# --------- Partición de la Página ---------- 
+# --------- Page Division ---------- 
     c1, c2 = st.columns((1,1))
     
-# ---------------------------------- Comportamiento de la Paternidad con Respecto a los Hombres Desocupados -----------------------------------        
+# ---------------------------------- Behavior of Paternity Regarding Unemployed Men -----------------------------------        
     
-    # ------ Título ------
-    c1.markdown("<h3 style ='text-align: center; color:#169AA3;'>Comportamiento de la Paternidad con Respecto a los Hombres Desocupados</h3>", unsafe_allow_html =True)
+    # ------ Title ------
+    c1.markdown("<h3 style ='text-align: center; color:#169AA3;'>Behavior of Paternity Regarding Unemployed Men</h3>", unsafe_allow_html =True)
     
-    # ¿Cómo es el comportamiento de la paternidad con respecto a los hombres desocupados?
-    brecha_nac2 = brecha_nac1[brecha_nac1['Tramos_edad'] == '15 a 19 años']
+    # How is the behavior of fatherhood with regard to unemployed men?    brecha_nac2 = brecha_nac1[brecha_nac1['Tramos_edad'] == '15 a 19 años']
     desocupados = brecha_des1.groupby(['Anio'])[['Tasa_des_hombres']].mean()
     padres = brecha_nac2.groupby(['Anio'])[['Porc_nacidos_padres']].mean()
     tabla = pd.DataFrame()
@@ -403,15 +402,15 @@ if menu_id == 'Dashboard':
     tabla['Relacion'] = (round(tabla['Porc_nacidos_padres']/tabla['Tasa_des_hombres'],2)*100)
     tabla = tabla.reset_index()
     
-    # ---- Gráfica ------
+    # ---- Graph ------
     fig = px.line(tabla, x = 'Anio', y = ['Relacion'],
                   color_discrete_sequence = px.colors.qualitative.G10, width = 650, height = 450)
     
-    # --- Detalles ---
+    # --- Details ---
     fig.update_layout(
         template = 'simple_white',
-        xaxis_title = '<b>Fecha<b>',
-        yaxis_title = '<b>Tasa de Padres adolescentes / Tasa de desocupación masculina<b>',
+        xaxis_title = '<b>Date<b>',
+        yaxis_title = '<b>Teen Parents Rate / Male Unemployment Rate<b>',
         plot_bgcolor = 'rgba(0,0,0,0)',
         
         legend=dict(
@@ -424,12 +423,12 @@ if menu_id == 'Dashboard':
 
     c1.plotly_chart(fig)
     
-# ---------------------------------- Comportamiento de la Maternidad con Respecto a las Madres Desocupadas -----------------------------------   
+# ---------------------------------- Maternity Behavior Regarding Unemployed Mothers -----------------------------------   
     
-    # ------ Título ------
-    c2.markdown("<h3 style ='text-align: center; color:#169AA3;'>Comportamiento de la Maternidad con Respecto a las Mujeres Desocupadas</h3>", unsafe_allow_html =True)
+    # ------ Title ------
+    c2.markdown("<h3 style ='text-align: center; color:#169AA3;'>Maternity Behavior Regarding Unemployed Women</h3>", unsafe_allow_html =True)
     
-        #¿Cómo es el comportamiento de la maternidad con respecto a las mujeres desocupadas en el 2019?
+        #How is the behavior of motherhood with respect to unemployed women in 2019?
     brecha_nac2=brecha_nac1[brecha_nac1['Tramos_edad']=='15 a 19 años']
     desocupados=brecha_des1.groupby(['Anio'])[['Tasa_des_mujeres']].mean()
     padres=brecha_nac2.groupby(['Anio'])[['Porc_nacidos_madres']].mean()
@@ -439,15 +438,15 @@ if menu_id == 'Dashboard':
     tabla['Relacion']=(round(tabla['Porc_nacidos_madres']/tabla['Tasa_des_mujeres'],2)*100)
     tabla= tabla.reset_index()
     
-    # ---- Gráfica ------
+    # ---- Graph ------
     fig = px.line(tabla, x='Anio', y =['Relacion'], 
                   color_discrete_sequence=px.colors.qualitative.G10, width =650, height=450)
     
-    # --- Detalles ---
+    # --- Details ---
     fig.update_layout(
         template = 'simple_white',
-        xaxis_title = '<b>Fecha<b>',
-        yaxis_title = '<b>Tasa de Madres adolescentes / Tasa de desocupación femenina<b>',
+        xaxis_title = '<b>Date<b>',
+        yaxis_title = '<b>Teenage mothers rate / Female unemployment rate<b>',
         plot_bgcolor='rgba(0,0,0,0)',
         
         legend=dict(
@@ -460,26 +459,26 @@ if menu_id == 'Dashboard':
     
     c2.plotly_chart(fig)
 
-# --------- Partición de la Página ----------     
+# --------- Page Division ----------     
     c1, c2 = st.columns((1,1))
     
-# ---------------------------------- Regiones con más Madres y Padres Adolescentes en 2019 -----------------------------------   
+# ---------------------------------- Regions with the most Adolescent Mothers and Fathers in 2019 -----------------------------------   
         
-    # ------ Título ------
-    c1.markdown("<h3 style ='text-align: center; color:#169AA3;'>Regiones con más Madres y Padres Adolescentes en 2019</h3>", unsafe_allow_html =True)
+    # ------ Title ------
+    c1.markdown("<h3 style ='text-align: center; color:#169AA3;'>Regions with the most Adolescent Mothers and Fathers in 2019</h3>", unsafe_allow_html =True)
     
-    # Se filtran las tres regiones con más madres y padres adolescentes en el año 2019 en bases individules
+    # The three regions with the most teenage mothers and fathers in 2019 are filtered on an individual bases
     madres2019 = brecha_nac1[brecha_nac1['Anio'] == 2019][['Anio', 'Region', 'Tramos_edad', 'Nacidos_madres']].rename(columns = {'Nacidos_madres':'cantidad'}).sort_values(by = 'cantidad', ascending = False).head(3)
     padres2019 = brecha_nac1[brecha_nac1['Anio'] == 2019][['Anio', 'Region', 'Tramos_edad', 'Nacidos_padres']].rename(columns = {'Nacidos_padres':'cantidad'}).sort_values(by = 'cantidad', ascending = False).head(3)
     
-    # Se agregan columnas con el genero
+    # Columns with gender are added
     madres2019['genero'] = 'Madres'
     padres2019['genero'] = 'Padres'
     
-    # Se hace el merge entre las bases de madres y padres
+    # The merge between the bases of mothers and fathers is done
     pm = pd.merge(madres2019, padres2019, how = 'outer', on = ['Anio',	'Region', 'Tramos_edad', 'cantidad', 'genero'])
     
-    # ---- Gráfica ------
+    # ---- Graph ------
     fig = px.bar(pm, x = 'Region', y = 'cantidad', color = 'genero',
                  barmode = 'group',
                  hover_data =['Tramos_edad'],
@@ -489,9 +488,9 @@ if menu_id == 'Dashboard':
     fig.update_layout(
         template = 'simple_white',
         title_x = 0.5,
-        legend_title = 'Evolución en el año según:',
-        xaxis_title = '<b>Región<b>',
-        yaxis_title = '<b>Cantidad<b>',
+        legend_title = 'Evolution in the year according to:',
+        xaxis_title = '<b>Region<b>',
+        yaxis_title = '<b>Quantity<b>',
         plot_bgcolor = 'rgba(0,0,0,0)',
         
         legend = dict(
@@ -504,19 +503,19 @@ if menu_id == 'Dashboard':
     
     c1.plotly_chart(fig, use_container_width = True)
     
-# -------------------- Porcentaje Histórico de Títulos por Género en las 3 Regiones con más Personas Tituladas ----------------------     
+# -------------------- Historical Percentage of Titles by Gender in the 3 Regions with the Most Persons Graduated ----------------------     
     
-    # ------ Título ------
-    c2.markdown("<h3 style ='text-align: center; color:#169AA3;'>Porcentaje Histórico de Títulos por Género en las 3 Regiones con más Personas Tituladas</h3>", unsafe_allow_html =True)
+    # ------ Title ------
+    c2.markdown("<h3 style ='text-align: center; color:#169AA3;'>Historical Percentage of Titles by Gender in the 3 Regions with the Most Persons Graduated</h3>", unsafe_allow_html =True)
     
-    #Creamos dos dataframes apartir de la bodega de datos brecha_tit1 agrupando por cada año la cantidad de mujeres tituladas y las madres adolescentes
+    #We created two dataframes from the data warehouse ofbrecca_tit1, grouping the number of female graduates and teenage mothers for each year.
     tituladas1 = brecha_tit1.groupby(['Region'])[['Tituladas']].sum().rename(columns={'Tituladas':'cantidad'}).reset_index().sort_values(by = "cantidad", ascending = False)
     tituladas1['tipo'] = 'Tituladas'
     madres1 = brecha_nac1.groupby(['Anio'])[['Nacidos_madres']].sum().rename(columns={'Nacidos_madres':'cantidad'}).reset_index()
     madres1['tipo'] = 'Madres Adolescentes'
     tone = tituladas1.head(3)
         
-    #Creamos dos dataframes que tengan la cantidad de titulados de cada genero agrupados por región y le agregamos una columna cuyos valores indiquen de que género es
+    #We create two dataframes that have the number of graduates of each gender grouped by region and we add a column whose values indicate what gender it is
     porch = brecha_tit1.groupby(['Region'])[['Porc_hombres_t']].mean().reset_index().rename(columns = {'Porc_hombres_t':'Porc'})
     porch['genero'] = 'Hombre' 
     porch['Porc'] = round(porch['Porc'],2)
@@ -527,14 +526,14 @@ if menu_id == 'Dashboard':
     porc = pd.merge(porch, porcm, how = 'outer', on = ['Region','genero','Porc'])
     porcg = pd.merge(porc, tone, how = 'inner', on = ['Region'])
     
-    #Creamos un gráfico de rayos de sol para representar el dataframe anterior
+    #We create a sunray graph to represent the previous dataframe
     fig = px.sunburst(porcg, path=['Region','Porc',], color='genero', color_discrete_sequence=['#A6FAC7','#1AB3EC','#A0FEFF'], values='Porc')
     
-    #Crearemos legend a mano    
-    D = porc['genero'].unique() # Generamos la lista de los generos que se muestran en el diagrama
-    colors = [ '#1AB3EC', # El color de los hombres
-             '#A6FAC7'] # El color de las Mujeres
-    for i, m in enumerate(D):  # Creamos la leyenda
+    #Legend    
+    D = porc['genero'].unique() # We generate the list of genera shown in the diagram
+    colors = [ '#1AB3EC', # the color of mens
+             '#A6FAC7'] # The color of womens
+    for i, m in enumerate(D):  # We create the legend
         fig.add_annotation(dict(font = dict(color = colors[i],size = 14),
                                             x = 0.8,
                                             y = 1-(i/10),
@@ -548,32 +547,32 @@ if menu_id == 'Dashboard':
     
     c2.plotly_chart(fig)  
 
-# -------------------- Brecha Salarial Promedio por Región ----------------------
-    # ------ Título ------ 
-    st.markdown("<h3 style ='text-align: center; color:#169AA3;'>Brecha Salarial Promedio por Región</h3>", unsafe_allow_html =True)      
+# -------------------- Average Salary Gap by Region ----------------------
+    # ------ Title ------ 
+    st.markdown("<h3 style ='text-align: center; color:#169AA3;'>Average Salary Gap by Region</h3>", unsafe_allow_html =True)      
     
-    # ---- Gráfica ------
+    # ---- Graph ------
     fig = px.bar(salario1, x = 'region', y='Brecha_promedio', barmode = 'group', width =650, height=500)
                  
-    # --- Detalles ---
+    # --- Details ---
     fig.update_layout(
-        xaxis_title = 'Región',
-        yaxis_title = 'Brecha porcentual',
+        xaxis_title = 'Region',
+        yaxis_title = 'Percentage gap',
         template = 'simple_white',
         title_x = 0.5,
         plot_bgcolor='rgba(0,0,0,0)')
     
     st.plotly_chart(fig, use_container_width = True)
         
-    st.markdown('---') # Línea de división
+    st.markdown('---') # Division Line
 
-    # ------ Título ------    
-    st.markdown("<h3 style ='text-align: center; color:#169AA3;'>Relación entre Títulos y Población</h3>", unsafe_allow_html =True)
+    # ------ Title ------    
+    st.markdown("<h3 style ='text-align: center; color:#169AA3;'>Relationship between Titles and Population</h3>", unsafe_allow_html =True)
     
-    poblacion = poblacion.sort_values(by='Region') # Se ordena las regiones en orden alfabetico
+    poblacion = poblacion.sort_values(by='Region') # Regions are arranged in alphabetical order.
     
     # Selectbox de lo que se mostrará en el mapa
-    genero_map = st.selectbox('Seleccione el género:', options = ['Tituladas', 'Titulados', 'Tituladas/Población', 'Titulados/Población'])
+    genero_map = st.selectbox('Seleccione el género:', options = ['Titled Women', 'Titled Men', 'Titled Women/Population', 'Titled Men/Population'])
     
     # Crear bases con el código de región para hacer el join con el geojson
     base1 = brecha_tit1.groupby(['Region', 'Codigo_region'])[['Mujeres_tituladas']].sum().reset_index().rename(columns = {'Codigo_region':'codregion','Mujeres_tituladas':'Indicador'})
@@ -581,67 +580,67 @@ if menu_id == 'Dashboard':
     
     
     # Condicional en función del selectbox
-    if genero_map == 'Tituladas':
-        st.markdown("<h3 style ='text-align: center; color:#169AA3;'>Mujeres Tituladas</h3>", unsafe_allow_html =True)
-        base = base1   # Se muestra las mujeres tituladas por región
-    elif genero_map == 'Titulados':
-        st.markdown("<h3 style ='text-align: center; color:#169AA3;'>Hombres Titulados</h3>", unsafe_allow_html =True)
-        base = base1  # Se muestra las hombres titulados por región
-    elif genero_map == 'Tituladas/Población':
+    if genero_map == 'Titled Women':
+        st.markdown("<h3 style ='text-align: center; color:#169AA3;'>Titled women</h3>", unsafe_allow_html =True)
+        base = base1   # Women graduates are shown by region
+    elif genero_map == 'Titled Men':
+        st.markdown("<h3 style ='text-align: center; color:#169AA3;'>Titled Men</h3>", unsafe_allow_html =True)
+        base = base1  # The Titled Men by region are showing 
+    elif genero_map == 'Titled Women/Population':
         st.markdown("<h3 style ='text-align: center; color:#169AA3;'>Mujeres Tituladas/Población</h3>", unsafe_allow_html =True)
         base = base1 
-        base['Indicador'] = base1['Indicador']/poblacion['Total'] # Se muestra las mujeres tituladas por región/población total
-    elif genero_map == 'Titulados/Población':
-        st.markdown("<h3 style ='text-align: center; color:#169AA3;'>Hombres Titulados/Población</h3>", unsafe_allow_html =True)
+        base['Indicador'] = base1['Indicador']/poblacion['Total'] # Women graduates are shown by region/total population
+    elif genero_map == 'Titled Men/Population':
+        st.markdown("<h3 style ='text-align: center; color:#169AA3;'>'Titled Men/Population'</h3>", unsafe_allow_html =True)
         base = base2
         base['Indicador'] = base2['Indicador']/poblacion['Total'] # Se muestra las hombres titulados por región/población total  
      
-    # ---- Gráfica ------
-    min = base['Indicador'].min() # generar mínimo del rango del color
-    max = base['Indicador'].max() # generar máximo del rango del color
+    # ---- Graph ------
+    min = base['Indicador'].min() # generate minimum of color range
+    max = base['Indicador'].max() # generate maximum of color range
     
-    fig = px.choropleth_mapbox( base, # dataframe que tiene el indicador
-                  geojson = gj_com, # archivo json con el shape
-                  color = 'Indicador', # columna que contiene el indicador: valor sobre el cual se va dar la tonalidad del color
-                  locations = 'codregion', # llave del dataframe para hacer el join con el shape
-                  featureidkey = 'properties.codregion', # llave del shape para hacer el join con el dataframe
-                  color_continuous_scale = 'Viridis', # escala de color que se va usar
-                  range_color =(max, min), # rangos entre los cuales va variar el color
-                  hover_name = 'Region', # información que se va a observar cuando se pase el cursor por el poligono
+    fig = px.choropleth_mapbox( base, # dataframe that has the indicator
+                  geojson = gj_com, # json file with the shape
+                  color = 'Indicador', # column containing the indicator: value on which the color tone will be given
+                  locations = 'codregion', # key of the dataframe to do the join with the shape
+                  featureidkey = 'properties.codregion', # key of the shape to do the join with the dataframe
+                  color_continuous_scale = 'Viridis', # color scale to be used
+                  range_color =(max, min), # ranges between which the color will vary
+                  hover_name = 'Region', # information to be observed when the cursor is passed over the polygon
                   center = {'lat':	-39.675147, 'lon': -71.542969}, # centro en el cual se va ubicar el mapa, ubicado a conveniencia
-                  zoom = 3.5, # zoom de la imagen
-                  mapbox_style = "carto-positron", height = 950) # estilo del mapa
+                  zoom = 3.5, # zoom of the image
+                  mapbox_style = "carto-positron", height = 950) # map style
     
-    fig.update_geos(fitbounds = 'locations', visible = False) # ajustar a los limites del shape
+    fig.update_geos(fitbounds = 'locations', visible = False) # adjust to shape bounds
     
     st.plotly_chart(fig, use_container_width = True)  
 
-# -------- Condicional para Ingresar el Contenido al Menú Bases --------    
+# -------- Conditional to Enter the Content to the Bases Menu --------    
 if menu_id == 'Bases':
 
-# -------- Brecha de Género en Paternidad y Maternidad Adolescente --------     
-    # ------ Título ------ 
-    st.markdown("<h3 style ='text-align: center; color: #169AA3;'>Brecha de Género en Paternidad y Maternidad Adolescente</h3>", unsafe_allow_html =True)
+# -------- Gender Gap between Adolescent Paternity and Maternity --------     
+    # ------ Title ------ 
+    st.markdown("<h3 style ='text-align: center; color: #169AA3;'>Gender Gap in Adolescent Paternity and Maternity</h3>", unsafe_allow_html =True)
 
-    # Dataframe a mostrar
+    # Dataframe to display
     df1 = brecha_nac1    
     
-    # Multiselect para filtrar por año
+    # Multiselect to filter by year
     anio1 = st.multiselect(
-        "Seleccione el año aquí:",
+        "Select the year here:
         options = df1['Anio'].unique(),
         default = df1['Anio'].unique())
     
-    # Regiones por las cuales se puede filtrar
+    # Regions by which you can filter
     region_list = ['Todas','Arica y Parinacota', 'Tarapacá', 'Antofagasta', 'Atacama',
        'Coquimbo', 'Valparaíso', 'Metropolitana', "O'Higgins", 'Maule',
        'Ñuble', 'Biobío', 'La Araucanía', 'Los Ríos', 'Los Lagos',
        'Aysén', 'Magallanes']
     
-    # Selectbox de las regiones
-    region1 = st.selectbox('Seleccione la región aquí:', region_list, key = '1')
+    # Regions Selectbox
+    region1 = st.selectbox('Select the region here:', region_list, key = '1')
     
-    # Condicional en función de las posibilidades escogidas
+    # Conditional depending on the chosen possibilities
     if  region1 == 'Todas':
         df_selection = df1.query(
             "Anio == @anio1")
@@ -649,10 +648,10 @@ if menu_id == 'Bases':
         df_selection = df1.query(
             "Anio == @anio1 & Region == @region1")
     
-    # Dataframe con filtros a mostrar
+    # Dataframe with filters to display
     df1 = df_selection
     
-    # Organizar Tabla
+    # Organize Table
     fig1=go.Figure(data = [go.Table(
         
         header = dict(values = list(df1.columns),
@@ -670,30 +669,30 @@ if menu_id == 'Bases':
     st.write(fig1)
     
 
-# -------- Brecha de Género en Desocupación --------
+# -------- Gender Gap in Unemployment--------
     
-    # ------ Título ------
-    st.markdown("<h3 style = 'text-align: center; color: #169AA3;'>Brecha de Género en Desocupación</h3>", unsafe_allow_html = True)
+    # ------ Title ------
+    st.markdown("<h3 style = 'text-align: center; color: #169AA3;'>Gender Gap in Unemployment</h3>", unsafe_allow_html = True)
     
-    # Dataframe a mostrar
+    # Dataframe to display
     df2 = brecha_des1
     
-    # Multiselect para filtrar por año
+    # Multiselect for filter by year
     anio2 = st.multiselect(
-        "Seleccione el año aquí:",
+        "Select the year here:",
         options = df2['Anio'].unique(),
         default = df2['Anio'].unique(), key = '2')
     
-    # Regiones por las cuales se puede filtrar
+    # Regions by which you can filter
     region_list = ['Todas','Arica y Parinacota', 'Tarapacá', 'Antofagasta', 'Atacama',
        'Coquimbo', 'Valparaíso', 'Metropolitana', "O'Higgins", 'Maule',
        'Ñuble', 'Biobío', 'La Araucanía', 'Los Ríos', 'Los Lagos',
        'Aysén', 'Magallanes']
     
-    # Selectbox de las regiones
-    region2 = st.selectbox('Seleccione la región aquí:', region_list, key = '2')
+    # Selectbox of the regions
+    region2 = st.selectbox('Select the regions here:', region_list, key = '2')
     
-    # Condicional en función de las posibilidades escogidas
+    # Conditional depending on the chosen possibilities
     if  region2 == 'Todas':
         df_selection = df2.query(
             "Anio == @anio2")
@@ -701,10 +700,10 @@ if menu_id == 'Bases':
         df_selection = df2.query(
             "Anio == @anio2 & Region == @region2")
 
-    # Dataframe con filtros a mostrar
+    # Dataframe with filters to show
     df2 = df_selection
     
-    # Organizar Tabla
+    # Organize Table
     fig = go.Figure(data = [go.Table(
         
         header = dict(values = list(df2.columns),
@@ -719,30 +718,30 @@ if menu_id == 'Bases':
     
     st.write(fig)
     
-# -------- Brecha de Género en Titulos Profesionales --------
+# -------- Gender Gap in Professional Degrees --------
     
-    # ------ Título ------
-    st.markdown("<h3 style ='text-align: center; color: #169AA3;'>Brecha de Género en Titulos Profesionales</h3>", unsafe_allow_html =True)
+    # ------ Title ------
+    st.markdown("<h3 style ='text-align: center; color: #169AA3;'>Gender Gap in Professional Degrees</h3>", unsafe_allow_html =True)
     
-    # Dataframe a mostrar
+    # Dataframe to display
     df3 = brecha_tit1
     
-    # Multiselect para filtrar por año
+    # Multiselect for filter by year
     anio3 = st.multiselect(
         "Seleccione el año aquí:",
         options = df3['Anio'].unique(),
         default = df3['Anio'].unique(), key = '3')
     
-    # Regiones por las cuales se puede filtrar
+    # Regions by which you can filter
     region_list = ['Todas','Arica y Parinacota', 'Tarapacá', 'Antofagasta', 'Atacama',
        'Coquimbo', 'Valparaíso', 'Metropolitana', "O'Higgins", 'Maule',
        'Ñuble', 'Biobío', 'La Araucanía', 'Los Ríos', 'Los Lagos',
        'Aysén', 'Magallanes']
     
-    # Selectbox de las regiones
-    region3 = st.selectbox('Seleccione la región aquí:', region_list, key = '3')
+    # Selectbox of the regions
+    region3 = st.selectbox('Select the region here:', region_list, key = '3')
     
-    # Condicional en función de las posibilidades escogidas
+    # Conditional depending on the chosen possibilities
     if  region3 == 'Todas':
         df_selection = df3.query(
             "Anio == @anio3")
@@ -750,10 +749,10 @@ if menu_id == 'Bases':
         df_selection = df3.query(
             "Anio == @anio3 & Region == @region3")
 
-    # Dataframe con filtros a mostrar
+    # Dataframe with filters to display
     df3 = df_selection
 
-    # Organizar Tabla
+    # Organize Tabla
     fig=go.Figure(data = [go.Table(
         
         header = dict(values = list(df3.columns),
@@ -770,7 +769,7 @@ if menu_id == 'Bases':
     st.write(fig)
     
     
-    # ------ Descargar los archivos en formato csv -------
+    # ------ Download the files in CSV format -------
     st.markdown(get_table_download_link(df1,'brecha_paternidad_maternidad'), unsafe_allow_html=True)
     st.markdown(get_table_download_link(df2,'brecha_desocupacion'), unsafe_allow_html=True)
     st.markdown(get_table_download_link(df3,'brecha_titulos'), unsafe_allow_html=True)
@@ -778,24 +777,24 @@ if menu_id == 'Bases':
 
 if menu_id == 'Videos':
     
-    # ------ Vídeo 1 -------
+    # ------ Video 1 -------
     c1, c2 = st.columns((1,1))
-    c1.markdown("<h3 style ='text-align: center; color:#169AA3;'>Desafíos para la Igualdad de Género</h3>", unsafe_allow_html =True)   
+    c1.markdown("<h3 style ='text-align: center; color:#169AA3;'>Challenges for Gender Equality</h3>", unsafe_allow_html =True)   
     c1.video("https://youtu.be/KSwJQrhxH14")
-    c1.markdown('<div style="text-align: justify;">En este contexto, hay retos culturales, educacionales y de democracia familiar que son prioritarios, coinciden las fuentes. Uno es la gran barrera social que inhibe la participación femenina: ellas se mantienen como las principales encargadas de lo doméstico y del cuidado de personas que requieren atención: hijos, enfermos o ancianos.</div>', unsafe_allow_html=True)
+    c1.markdown('<div style="text-align: justify;">In this context, there are cultural, educational and family democracy challenges that are priorities, the sources agree. One is the great social barrier that inhibits womens participation: they continue to be the main people in charge of the household and the care of people who require attention: children, the sick or the elderly.</div>', unsafe_allow_html=True)
     
-    # ------ Vídeo 2 -------
-    c2.markdown("<h3 style ='text-align: center; color:#169AA3;'>Más Mujeres en Ciencias</h3>", unsafe_allow_html =True)
+    # ------ Video 2 -------
+    c2.markdown("<h3 style ='text-align: center; color:#169AA3;'>More Women in Science</h3>", unsafe_allow_html =True)
     c2.video("https://youtu.be/Yuki-g9sgLw")
-    c2.markdown('<div style="text-align: justify;">Fomentar, promover e incentivar a más mujeres jóvenes a elegir carreras enfocadas en la ciencia, tecnología, ingeniería y matemáticas, no solo para aumentar la participación laboral femenina, sino también para elevar la participación de mujeres en carreras históricamente masculinizadas. Hasta ahora existe una baja participación de mujeres en carreras STEM por una serie de brechas producto de estereotipos que se reproducen desde la infancia.</div>', unsafe_allow_html=True)
+    c2.markdown('<div style="text-align: justify;">Encourage, promote and encourage more young women to choose careers focused on science, technology, engineering and mathematics, not only to increase female labor participation, but also to increase the participation of women in historically masculinized careers. Until now, there has been a low participation of women in STEM careers due to a series of gaps resulting from stereotypes that are reproduced from childhood.</div>', unsafe_allow_html=True)
 
-    # ------ Vídeo 3 -------
+    # ------ Video 3 -------
     c3, c4 = st.columns((1,1))
     c3.markdown("<h3 style ='text-align: center; color:#169AA3;'>Género en el Sistema Financiero</h3>", unsafe_allow_html =True)
     c3.video("https://youtu.be/9INYaVbHiCY")
-    c3.markdown('<div style="text-align: justify;">El Informe de Género en el Sistema Financiero 2021, con cierre estadístico a marzo de este año, reveló sostenidos avances en el cierre de brechas de género asociadas al uso de servicios financieros.</div>', unsafe_allow_html=True)
+    c3.markdown('<div style="text-align: justify;">The Report on Gender in the Financial System 2021, with a statistical close as of March this year, revealed sustained progress in closing gender gaps associated with the use of financial services.</div>', unsafe_allow_html=True)
     
-    # ------ Vídeo 4 -------    
+    # ------ Video 4 -------    
     c4.markdown("<h3 style ='text-align: center; color:#169AA3;'>Evaluación de Brechas en la Trayectoria de Investigación</h3>", unsafe_allow_html =True)
     c4.video("https://www.youtube.com/watch?v=9OUiga-9VuI&feature=emb_imp_woyt")
-    c4.markdown('<div style="text-align: justify;">Estudio de género que evalúa y cuantifica la posible existencia de barreras que puedan tener las mujeres beneficiarias de programas públicos en Chile durante sus trayectorias de investigación.</div>', unsafe_allow_html=True)
+    c4.markdown('<div style="text-align: justify;">Gender study that evaluates and quantifies the possible existence of barriers that women beneficiaries of public programs in Chile may have during their research trajectories.</div>', unsafe_allow_html=True)
