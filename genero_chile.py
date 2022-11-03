@@ -1,3 +1,8 @@
+# ---------------- Importar Paquetes -------------
+import streamlit as st # !pip install streamlit 
+import pandas as pd
+import plotly.express as px #!pip install plotly
+import plotly.graph_objects as go
 # ---------------- Import packages -------------
 import streamlit as st # !pip install streamlit 
 import pandas as pd
@@ -130,15 +135,16 @@ if menu_id == 'Dashboard':
     
     bd = brecha_des1.groupby(['Region'])[['Brecha_genero']].max().sort_values(by='Brecha_genero', ascending = False).head(1)
     
+    
     top_perp_name = bd['Brecha_genero'][0]
 
     top_region = bd.index[0]  
     
-    c2.metric('Brecha', value = top_perp_name, delta = top_region)
+    c2.metric('Gap', value = top_perp_name, delta = top_region)
     
 
     # -------- Top Title Gap ---------    
-    c3.markdown("<h3 style ='text-align: left; color: #169AA3;'>Top Títulos</h3>", unsafe_allow_html =True)
+    c3.markdown("<h3 style ='text-align: left; color: #169AA3;'>Top Titles</h3>", unsafe_allow_html =True)
     
     bd = brecha_tit1.groupby(['Region'])[['Brecha_genero']].max().sort_values(by='Brecha_genero').head(1)    
         
@@ -146,10 +152,10 @@ if menu_id == 'Dashboard':
 
     top_region = bd.index[0]  
        
-    c3.metric('Brecha', value = top_perp_name, delta = top_region)
+    c3.metric('Gap', value = top_perp_name, delta = top_region)
     
     # -------- Top Brecha de Maternidad y Paternidad ---------  
-    c4.markdown("<h3 style ='text-align: left; color: #169AA3;'>Top Nacimientos</h3>", unsafe_allow_html =True)
+    c4.markdown("<h3 style ='text-align: left; color: #169AA3;'>Top Births</h3>", unsafe_allow_html =True)
     
     bd = brecha_nac1.groupby(['Region'])[['Brecha_genero']].max().sort_values(by='Brecha_genero', ascending = False)
     
@@ -157,7 +163,7 @@ if menu_id == 'Dashboard':
 
     top_region = bd.index[0]  
        
-    c4.metric('Brecha', value = top_perp_name, delta = top_region)
+    c4.metric('Gap', value = top_perp_name, delta = top_region)
     
     # -------- Top Salary Gap ---------  
     
@@ -175,7 +181,7 @@ if menu_id == 'Dashboard':
     
     c5.markdown("<h3 style ='text-align: left; color: #169AA3;'>Top Salary</h3>", unsafe_allow_html =True)
     
-    c5.metric('Brecha', value = top_perp_name, delta = top_region)
+    c5.metric('Gap', value = top_perp_name, delta = top_region)
     
     st.markdown('---')    
 
@@ -185,7 +191,7 @@ if menu_id == 'Dashboard':
     st.markdown("<h3 style ='text-align: center; color:#169AA3;'>Gender Gaps Evolution</h3>", unsafe_allow_html = True)
     
     # The unemployment gap is grouped by year
-    bgdes = brecha_des1.groupby(['Anio'])[['Brecha_genero']].mean().rename(columns={'Brecha_genero':'brecha desocupación'}).reset_index() 
+    bgdes = brecha_des1.groupby(['Anio'])[['Brecha_genero']].mean().rename(columns={'Brecha_genero':'unemployment gap'}).reset_index() 
     
     # The percentages of adolescent mothers and fathers are grouped by year and region, as it was by age groups
     bgnac = brecha_nac1.groupby(['Anio', 'Region'])[['Porc_nacidos_padres', 'Porc_nacidos_madres']].sum().reset_index()
@@ -194,10 +200,10 @@ if menu_id == 'Dashboard':
     bgnac['brecha_genero'] = bgnac['Porc_nacidos_madres'] - bgnac['Porc_nacidos_padres']
     
     # The gap between mothers and fathers is grouped by year
-    bgnac = bgnac.groupby(['Anio'])[['brecha_genero']].mean().rename(columns={'brecha_genero':'brecha padres'}).reset_index()
+    bgnac = bgnac.groupby(['Anio'])[['brecha_genero']].mean().rename(columns={'brecha_genero':'fathers gap'}).reset_index()
     
     # The title gaps is grouped by year
-    bgtit = brecha_tit1.groupby(['Anio'])[['Brecha_genero']].mean().rename(columns={'Brecha_genero':'brecha titulos'}).reset_index()
+    bgtit = brecha_tit1.groupby(['Anio'])[['Brecha_genero']].mean().rename(columns={'Brecha_genero':'titles gap'}).reset_index()
     
     # The gender gaps are merged by year
     bgseries = pd.merge(bgnac, bgdes, how = 'outer', on = ['Anio'])
@@ -206,16 +212,16 @@ if menu_id == 'Dashboard':
     # A line graph is made to visualize the time series
     
     # ---- Gaph ------
-    fig = px.line(bgseries1, x = 'Year', y = ['Fathers gap',	'Unemployment gap', 'Titles gap'], width = 1000, height = 450,
+    fig = px.line(bgseries1, x = 'Anio', y = ['fathers gap',	'unemployment gap', 'titles gap'], width = 1000, height = 450,
                   color_discrete_sequence = ['#A6FAC7','#68BAE3','#169AA3'], markers = True
                   )
     
     # --- Details ---
     fig.update_layout(
         template = 'simple_white',
-        legend_title = 'Tipo:',
-        xaxis_title = '<b>Año<b>',
-        yaxis_title = '<b>Brecha<b>',
+        legend_title = 'Type:',
+        xaxis_title = '<b>Year<b>',
+        yaxis_title = '<b>Gap<b>',
         plot_bgcolor='rgba(0,0,0,0)',
         
         legend = dict(
@@ -239,9 +245,9 @@ if menu_id == 'Dashboard':
     
     # We create two dataframes from the 'brecha_tit1' data warehouse, grouping for each year the number of women graduates and teenage mothers
     tituladas1 = brecha_tit1.groupby(['Anio'])[['Mujeres_tituladas']].sum().rename(columns={'Mujeres_tituladas':'cantidad'}).reset_index()
-    tituladas1['tipo'] = 'Tituladas' # A column with the type 'Titles' is added
+    tituladas1['tipo'] = 'Titled women' # A column with the type 'Titles' is added
     madres1 = brecha_nac1.groupby(['Anio'])[['Nacidos_madres']].sum().rename(columns={'Nacidos_madres':'cantidad'}).reset_index()
-    madres1['tipo'] = 'Madres Adolescentes' # A column with the type 'Teen Mothers' is added
+    madres1['tipo'] = 'Teenage mothers' # A column with the type 'Teen Mothers' is added
 
     # We join the two previous dataframes
     tm = pd.merge(tituladas1, madres1, how = 'outer', on = ['Anio','cantidad','tipo'])
@@ -249,7 +255,7 @@ if menu_id == 'Dashboard':
     # We created a bar chart where the relationship of graduates with teenage mothers per year can be visualized
     
     # ---- Graph ------
-    fig = px.bar(tm, x = 'Year', y = 'Quantity', color = 'tipo', barmode = 'group', width = 580, height = 350,
+    fig = px.bar(tm, x = 'Anio', y = 'cantidad', color = 'tipo', barmode = 'group', width = 580, height = 350,
              color_discrete_sequence = ['#A6FAC7','#68BAE3']
              )
     
@@ -280,9 +286,9 @@ if menu_id == 'Dashboard':
     # We create two dataframes where each unemployment rate of each gender is grouped by region in order to obtain a column that contains information on the gender
     # Each gender rate is renamed by quantity so that we can create a column that is in common and we will call it rate
     desocupados = brecha_des1.groupby(['Region'])[['Tasa_des_hombres']].mean().rename(columns={'Tasa_des_hombres':'tasa'}).reset_index()
-    desocupados['tipo'] = 'Hombres'
+    desocupados['tipo'] = 'Men'
     desocupadas = brecha_des1.groupby(['Region'])[['Tasa_des_mujeres']].mean().rename(columns={'Tasa_des_mujeres':'tasa'}).reset_index()
-    desocupadas['tipo'] = 'Mujeres'
+    desocupadas['tipo'] = 'Women'
     
     # We join the two dataframes and obtain a table that contains the unemployment rate of each region and to which gender it belongs
     des = pd.merge(desocupados, desocupadas, how = 'outer', on = ['Region','tasa','tipo']).sort_values(by="tasa", ascending= False)
@@ -393,7 +399,8 @@ if menu_id == 'Dashboard':
     # ------ Title ------
     c1.markdown("<h3 style ='text-align: center; color:#169AA3;'>Behavior of Paternity Regarding Unemployed Men</h3>", unsafe_allow_html =True)
     
-    # How is the behavior of fatherhood with regard to unemployed men?    brecha_nac2 = brecha_nac1[brecha_nac1['Tramos_edad'] == '15 a 19 años']
+    # How is the behavior of fatherhood with regard to unemployed men?    
+    brecha_nac2 = brecha_nac1[brecha_nac1['Tramos_edad'] == '15 a 19 años']
     desocupados = brecha_des1.groupby(['Anio'])[['Tasa_des_hombres']].mean()
     padres = brecha_nac2.groupby(['Anio'])[['Porc_nacidos_padres']].mean()
     tabla = pd.DataFrame()
@@ -404,7 +411,7 @@ if menu_id == 'Dashboard':
     
     # ---- Graph ------
     fig = px.line(tabla, x = 'Anio', y = ['Relacion'],
-                  color_discrete_sequence = px.colors.qualitative.G10, width = 650, height = 450)
+                  color_discrete_sequence = px.colors.qualitative.G10, width = 650, height = 450,labels=False)
     
     # --- Details ---
     fig.update_layout(
@@ -413,12 +420,7 @@ if menu_id == 'Dashboard':
         yaxis_title = '<b>Teen Parents Rate / Male Unemployment Rate<b>',
         plot_bgcolor = 'rgba(0,0,0,0)',
         
-        legend=dict(
-            orientation = "h",
-            yanchor = "bottom",
-            y = 1.02,
-            xanchor = "right",
-            x = 0.8)
+         
     )
 
     c1.plotly_chart(fig)
@@ -468,18 +470,18 @@ if menu_id == 'Dashboard':
     c1.markdown("<h3 style ='text-align: center; color:#169AA3;'>Regions with the most Adolescent Mothers and Fathers in 2019</h3>", unsafe_allow_html =True)
     
     # The three regions with the most teenage mothers and fathers in 2019 are filtered on an individual bases
-    madres2019 = brecha_nac1[brecha_nac1['Anio'] == 2019][['Anio', 'Region', 'Tramos_edad', 'Nacidos_madres']].rename(columns = {'Nacidos_madres':'cantidad'}).sort_values(by = 'cantidad', ascending = False).head(3)
-    padres2019 = brecha_nac1[brecha_nac1['Anio'] == 2019][['Anio', 'Region', 'Tramos_edad', 'Nacidos_padres']].rename(columns = {'Nacidos_padres':'cantidad'}).sort_values(by = 'cantidad', ascending = False).head(3)
+    madres2019 = brecha_nac1[brecha_nac1['Anio'] == 2019][['Anio', 'Region', 'Tramos_edad', 'Nacidos_madres']].rename(columns = {'Nacidos_madres':'quantity'}).sort_values(by = 'quantity', ascending = False).head(3)
+    padres2019 = brecha_nac1[brecha_nac1['Anio'] == 2019][['Anio', 'Region', 'Tramos_edad', 'Nacidos_padres']].rename(columns = {'Nacidos_padres':'quantity'}).sort_values(by = 'quantity', ascending = False).head(3)
     
     # Columns with gender are added
-    madres2019['genero'] = 'Madres'
-    padres2019['genero'] = 'Padres'
+    madres2019['genero'] = 'Mothers'
+    padres2019['genero'] = 'Fathers'
     
     # The merge between the bases of mothers and fathers is done
-    pm = pd.merge(madres2019, padres2019, how = 'outer', on = ['Anio',	'Region', 'Tramos_edad', 'cantidad', 'genero'])
+    pm = pd.merge(madres2019, padres2019, how = 'outer', on = ['Anio',	'Region', 'Tramos_edad', 'quantity', 'genero'])
     
     # ---- Graph ------
-    fig = px.bar(pm, x = 'Region', y = 'cantidad', color = 'genero',
+    fig = px.bar(pm, x = 'Region', y = 'quantity', color = 'genero',
                  barmode = 'group',
                  hover_data =['Tramos_edad'],
                  color_discrete_sequence = ['#A6FAC7','#68BAE3'])
@@ -517,10 +519,10 @@ if menu_id == 'Dashboard':
         
     #We create two dataframes that have the number of graduates of each gender grouped by region and we add a column whose values indicate what gender it is
     porch = brecha_tit1.groupby(['Region'])[['Porc_hombres_t']].mean().reset_index().rename(columns = {'Porc_hombres_t':'Porc'})
-    porch['genero'] = 'Hombre' 
+    porch['genero'] = 'Man' 
     porch['Porc'] = round(porch['Porc'],2)
     porcm = brecha_tit1.groupby(['Region'])[['Porc_mujeres_t']].mean().reset_index().rename(columns = {'Porc_mujeres_t':'Porc'})
-    porcm['genero'] = 'Mujer'
+    porcm['genero'] = 'Woman'
     porcm['Porc'] = round(porcm['Porc'], 2)
     
     porc = pd.merge(porch, porcm, how = 'outer', on = ['Region','genero','Porc'])
@@ -627,7 +629,7 @@ if menu_id == 'Bases':
     
     # Multiselect to filter by year
     anio1 = st.multiselect(
-        "Select the year here:
+        "Select the year here:",
         options = df1['Anio'].unique(),
         default = df1['Anio'].unique())
     
@@ -690,7 +692,7 @@ if menu_id == 'Bases':
        'Aysén', 'Magallanes']
     
     # Selectbox of the regions
-    region2 = st.selectbox('Select the regions here:', region_list, key = '2')
+    region2 = st.selectbox('Select the regions here:', region_list, key = '3')
     
     # Conditional depending on the chosen possibilities
     if  region2 == 'Todas':
@@ -730,7 +732,7 @@ if menu_id == 'Bases':
     anio3 = st.multiselect(
         "Seleccione el año aquí:",
         options = df3['Anio'].unique(),
-        default = df3['Anio'].unique(), key = '3')
+        default = df3['Anio'].unique(), key = '5')
     
     # Regions by which you can filter
     region_list = ['Todas','Arica y Parinacota', 'Tarapacá', 'Antofagasta', 'Atacama',
@@ -739,7 +741,7 @@ if menu_id == 'Bases':
        'Aysén', 'Magallanes']
     
     # Selectbox of the regions
-    region3 = st.selectbox('Select the region here:', region_list, key = '3')
+    region3 = st.selectbox('Select the region here:', region_list, key = '4')
     
     # Conditional depending on the chosen possibilities
     if  region3 == 'Todas':
@@ -790,11 +792,11 @@ if menu_id == 'Videos':
 
     # ------ Video 3 -------
     c3, c4 = st.columns((1,1))
-    c3.markdown("<h3 style ='text-align: center; color:#169AA3;'>Género en el Sistema Financiero</h3>", unsafe_allow_html =True)
+    c3.markdown("<h3 style ='text-align: center; color:#169AA3;'>Gender in the Financial System</h3>", unsafe_allow_html =True)
     c3.video("https://youtu.be/9INYaVbHiCY")
     c3.markdown('<div style="text-align: justify;">The Report on Gender in the Financial System 2021, with a statistical close as of March this year, revealed sustained progress in closing gender gaps associated with the use of financial services.</div>', unsafe_allow_html=True)
     
     # ------ Video 4 -------    
-    c4.markdown("<h3 style ='text-align: center; color:#169AA3;'>Evaluación de Brechas en la Trayectoria de Investigación</h3>", unsafe_allow_html =True)
+    c4.markdown("<h3 style ='text-align: center; color:#169AA3;'>Gap's evaluation in the investigation trayectory</h3>", unsafe_allow_html =True)
     c4.video("https://www.youtube.com/watch?v=9OUiga-9VuI&feature=emb_imp_woyt")
     c4.markdown('<div style="text-align: justify;">Gender study that evaluates and quantifies the possible existence of barriers that women beneficiaries of public programs in Chile may have during their research trajectories.</div>', unsafe_allow_html=True)
